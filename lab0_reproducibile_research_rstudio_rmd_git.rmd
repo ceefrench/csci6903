@@ -5,6 +5,7 @@ output:
     fig_height: 3.75
     highlight: textmate
     theme: readable
+    author: Conor French
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
