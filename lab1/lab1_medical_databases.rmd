@@ -21,24 +21,41 @@ This practical is based on exploratory data analysis and prediction of a dataset
 
 ## Introduction
 
-The Brazilian public health system, known as SUS for Unified Health System in its acronym in Portuguese, is one of the largest health system in the world, representing government investment of more than 9% of GDP. However, its operation is not homogeneous and there are distinct perceptions of quality from citizens in different regions of the country.  Non-attendance of medical appointments contributes a significant additional burden on limited medical resources.  This analysis will try and investigate possible factors behind non-attendance using an administrative database of appointment data from Vitoria, Espírito Santo, Brazil.
+The Brazilian public health system, known as SUS for Unified Health System in its acronym in Portuguese, is one of the largest health system in the world, representing government investment of more than 9% of GDP. However, its operation is not homogeneous and there are distinct perceptions of quality from citizens in different regions of the country. Non-attendance of medical appointments contributes a significant additional burden on limited medical resources. This analysis will try and investigate possible factors behind non-attendance using an administrative database of appointment data from Vitoria, Espírito Santo, Brazil.
 
 The data required is available via the [course website](https://github.com/maguire-lab/health_data_science_research/tree/master/static_files/practicals/lab1_data).
 
 ### Understanding the data
 
-**1** Use the data dictionary describe each of the variables/features in the CSV in your report.
+**1** Use the data dictionary describe each of the variables/features in the CSV in your report. 
+**A:** The variables are as follows:
+PatientID is a unique identifier assigned to each patient. 
+AppointmentID is as above, assigned to each appointment. 
+Gender is the patient's gender.
+ScheduledDate is the date on which the appointment was initially scheduled. 
+AppointmentDate is the date at which the appointment was scheduled to take place. (Does not record the hour of the day, and should be the same date as or later than ScheduledDate).
+Age is the patient's age.
+Neighbourhood is the district in which the appointment was scheduled to take place (may differ from the district that the patient resides in).
+SocialWelfare encodes whether or not the patient is receiving welfare payments.
+Hypertension encodes whether the patient had a previous hypertension diagnosis.
+Diabetes is as above for a diabetes diagnosis.
+AlcoholUseDisorder is as above for an alcohol use disorder diagnosis. 
+Disability: From an integer scale of 0 to 4, encodes severity of previously diagnosed disability (0 being no diagnosis).
+SMSReceived encodes as a boolean whether or not a reminder text was sent to the patient before the appointment. 
+NoShow encodes whether or not the patient did not attend the appointment. 
 
 **2** Can you think of 3 hypotheses for why someone may be more likely to miss a medical appointment?
 
-**3** Can you provide 3 examples of important contextual information that is missing in this data dictionary and dataset that could impact your analyses e.g., what type of medical appointment does each `AppointmentID` refer to?  
+A patient may be likely
+
+**3** Can you provide 3 examples of important contextual information that is missing in this data dictionary and dataset that could impact your analyses e.g., what type of medical appointment does each `AppointmentID` refer to?
 
 ## Data Parsing and Cleaning
 
 **4** Modify the following to make it reproducible i.e., downloads the data file directly from version control
 
 ```{r parse}
-raw.data <- read_csv('lab1_data/2016_05v2_VitoriaAppointmentData.csv')#, col_types='ccfTTicllllflf')
+raw.data <- read_csv('lab1_data/2016_05v2_VitoriaAppointmentData.csv', col_types='ccfTTicllllflf')
 #raw.data <- readr::read_csv('https://raw.githubusercontent.com/maguire-lab/health_data_science_research/ ... ')
 ```
 
@@ -47,24 +64,32 @@ Now we need to check data is valid: because we specified col_types and the data 
 ```{r}
 raw.data %>% filter(Age > 110)
 ```
+
 We can see there are 2 patient's older than 100 which seems suspicious but we can't actually say if this is impossible.
 
 **5** Are there any individuals with impossible ages? If so we can drop this row using `filter` i.e., `data <- data %>% filter(CRITERIA)`
 
 ## Exploratory Data Analysis
-First, we should get an idea if the data meets our expectations, there are newborns in the data (`Age==0`) and we wouldn't expect any of these to be diagnosed with Diabetes, Alcohol Use Disorder, and Hypertension (although in theory it could be possible).  We can easily check this:
+
+First, we should get an idea if the data meets our expectations, there are newborns in the data (`Age==0`) and we wouldn't expect any of these to be diagnosed with Diabetes, Alcohol Use Disorder, and Hypertension (although in theory it could be possible). We can easily check this:
 
 ```{r}
 raw.data %>% filter(Age == 0) %>% select(Hypertension, Diabetes, AlcoholUseDisorder) %>% unique()
 ```
 
-We can also explore things like how many different neighborhoods are there and how many appoints are from each? 
+We can also explore things like how many different neighborhoods are there and how many appoints are from each?
 
 ```{r}
 count(raw.data, Neighbourhood, sort = TRUE)
 ```
+
 **6** What is the maximum number of appointments from the same patient?
 
+```{r}
+count(raw.data, PatientID, sort = TRUE)
+```
+
+**A:** The max number of appointments from one patient is 88 for patient with ID 822145925426128.
 
 Let's explore the correlation between variables:
 
@@ -128,14 +153,14 @@ corplot(raw.data[,numerical.vars])
 
 ```
 
-Correlation heatmaps are useful for identifying linear relationships between variables/features.
-In this case, we are particularly interested in relationships between `NoShow` and any specific variables.
+Correlation heatmaps are useful for identifying linear relationships between variables/features. In this case, we are particularly interested in relationships between `NoShow` and any specific variables.
 
 **7** Which parameters most strongly correlate with missing appointments (`NoShow`)?
 
 **8** Are there any other variables which strongly correlate with one another?
 
 **9** Do you see any issues with PatientID/AppointmentID being included in this plot? 
+**A:** AppointmentID is definitely not useful in the context of a correlation heatmap plot, as presumably each appointment ID is unique and numerically arbitrary. PatientID on the other hand is slightly less redundant, as there could be meaningful observations derived from its correlation to NoShow as compared to the other variables, in that it be indicative of the influence of static patient-specific factors not captured by the other variables.
 
 Let's look at some individual variables and their relationship with `NoShow`.
 
@@ -145,7 +170,8 @@ ggplot(raw.data,aes(x=Age,fill=`NoShow`))+
   ggtitle("Density of Age across No Show")+
   scale_fill_manual(values=c("grey50","orangered"))
 ```
-There does seem to be a difference in the distribution of ages of people that miss and don't miss appointments.  
+
+There does seem to be a difference in the distribution of ages of people that miss and don't miss appointments.\
 However, the shape of this distribution means the actual correlation is near 0 in the heatmap above. This highlights the need to look at individual variables.
 
 Let's take a closer look at age by breaking it into categories.
@@ -164,9 +190,9 @@ ggplot(raw.data,aes(x=Age.Range,y=1,fill=NoShow))+
 ```
 
 **10** How could you be misled if you only plotted 1 of these 2 plots of attendance by age group?
+**A:** With only the second of the two plots, one might be led to believe that there is a large difference in the attendance behaviour of 100-110 year old patients and 111-120 year old patients, where these differences in proportion are actually down to the sample sizes, both of which are exceedingly small.
 
-The key takeaway from this is that  number of individuals > 90 are very few from plot 1 so probably are very small so unlikely to make much of an impact on the overall distributions. 
-However, other patterns do emerge such as 10-20 age group is nearly twice as likely to miss appointments as the 60-70 years old.
+The key takeaway from this is that number of individuals \> 90 are very few from plot 1 so probably are very small so unlikely to make much of an impact on the overall distributions. However, other patterns do emerge such as 10-20 age group is nearly twice as likely to miss appointments as the 60-70 years old.
 
 Another interesting finding is the `NA` group, they are the result of trying to assign age of 0 to groups and represent missing data.
 
@@ -185,7 +211,6 @@ ggplot(raw.data,aes(x=Age,fill=`NoShow`))+
   facet_grid(SMSReceived ~ .)
 ```
 
-
 ```{r,fig.align="center"}
 # [2.8.2] No Show vs SMS
 ggplot(raw.data,aes(x=SMSReceived,y=1,fill=`NoShow`))+
@@ -193,15 +218,23 @@ ggplot(raw.data,aes(x=SMSReceived,y=1,fill=`NoShow`))+
   scale_fill_manual(values=c("grey50","orangered"))+
   ggtitle("Proportion of SMS received across No Show")
 ```
-**11** From this plot does it look like SMS reminders increase or decrease the chance of someone not attending an appointment? Why might the opposite actually be true (hint: think about biases)? 
 
-**12** Create a similar plot which compares the the density of `NoShow` across the values of disability 
+**11** From this plot does it look like SMS reminders increase or decrease the chance of someone not attending an appointment? Why might the opposite actually be true (hint: think about biases)?
 
-```{r}
-#Insert plot
+***A***: Looking at the above plot, the proportion of no-shows is higher among those who received an SMS reminder than those who did not, this may make it appear that SMS reminders increase the chance of non-attendance. In reality this may not be accurate however
+
+**12** Create a similar plot which compares the the density of `NoShow` across the values of disability
+
+```{r,fig.align="center"}
+# [2.8] Age vs No Show vs Disability
+ggplot(raw.data,aes(x=Disability,fill=`NoShow`))+
+  geom_density(color="white",alpha=0.8)+
+  ggtitle("Density of Disability across No Show")+
+  scale_fill_manual(values=c("grey50","orangered"))
+  #facet_grid(Disability ~ .)
 ```
 
-Now let's look at the neighbourhood data as location can correlate highly with many social determinants of health. 
+Now let's look at the neighbourhood data as location can correlate highly with many social determinants of health.
 
 ```{r, warning=FALSE,fig.align="center"}
 ggplot(raw.data,aes(x=Neighbourhood,y=1,fill=`NoShow`))+
@@ -220,8 +253,10 @@ ggplot(raw.data,aes(x=Neighbourhood,y=1,fill=`NoShow`))+
 Most neighbourhoods have similar proportions of no-show but some have much higher and lower rates.
 
 **13** Suggest a reason for differences in attendance rates across neighbourhoods.
+**A:** One possible reason for differences across neighbourhoods would be differences in access to the clinics at which the appointments are scheduled, where some neighbourhoods may be more distant from clinics and hospitals, or may have poor conditions for transportation. 
 
 Now let's explore the relationship between gender and NoShow.
+
 ```{r, fig.align="center"}
 # [2.11] Gender vs No Show
 ggplot(raw.data,aes(x=Gender,y=1,fill=`NoShow`))+
@@ -232,9 +267,12 @@ ggplot(raw.data,aes(x=Gender,y=1,fill=`NoShow`))+
 
 **14** Create a similar plot using `SocialWelfare`
 
-```{r ,fig.align="center"}
-#Insert plot
-
+```{r, fig.align="center"}
+# [2.11] Social Welfare vs No Show
+ggplot(raw.data,aes(x=SocialWelfare,y=1,fill=`NoShow`))+
+  geom_bar(stat="identity",position="fill",width=0.5)+
+  scale_fill_manual(values=c("grey50","orangered"))+
+  ggtitle("Proportion of Social Welfare usage across No Show")
 ```
 
 Far more exploration could still be done, including dimensionality reduction approaches but although we have found some patterns there is no major/striking patterns on the data as it currently stands.
@@ -260,6 +298,7 @@ ggplot(raw.data,aes(x=AppointmentDay,y=1,fill=NoShow))+
   scale_fill_manual(values=c("grey50","orangered"))
 
 ```
+
 Let's begin by creating a variable called `Lag`, which is the difference between when an appointment was scheduled and the actual appointment.
 
 ```{r,echo=FALSE,fig.align="center"}
@@ -273,10 +312,11 @@ ggplot(raw.data,aes(x=Lag,fill=`NoShow`))+
 ```
 
 **15** Have a look at the values in lag variable, does anything seem odd?
+**A:** 
 
 ## Predictive Modeling
 
-Let's see how well we can predict NoShow from the data. 
+Let's see how well we can predict NoShow from the data.
 
 We'll start by preparing the data, followed by splitting it into testing and training set, modeling and finally, evaluating our results.
 
@@ -305,6 +345,7 @@ fit.control = trainControl(method="cv",number=3,
 **16** Based on the EDA, how well do you think this is going to work?
 
 Now we can train our XGBoost model
+
 ```{r}
 xgb.grid = expand.grid(eta=c(0.05),
                        max_depth=c(4),colsample_bytree=1,
@@ -339,7 +380,6 @@ ggplot(xgb.probs,aes(x=Yes,y=Actual,color=Match))+
   scale_color_manual(values=c("grey40","orangered"))+
   ggtitle("Visualizing Model Performance", "(Dust Plot)")
 ```
-
 
 Finally, let's close it off with the variable importance of our model:
 

@@ -7,6 +7,7 @@ output:
     theme: readable
     author: Conor French
 ---
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -15,7 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Objectives
 
--   Begin to familiarise yourself with RStudio (and by extension R's tidyverse)
+-   Begin to familiarise y ourself with RStudio (and by extension R's tidyverse)
 -   Learn how to create basic data visualisations using ggplot2
 -   Use Rmarkdown to create literate/documented analyses
 -   Use git to version control your code in a github repository
@@ -170,11 +171,13 @@ ggplot(data = star_data, mapping = aes(x = x, y = y)) +
   geom_point()
 
 ```
+
 ```{r, eval=TRUE}
 star_data %>%
   summarize(r = cor(x, y))
 ```
-**The star data has a slightly less negative correlation than the dino data. **
+
+**The star data has a slightly less negative correlation than the dino data.**
 
 **4. Plot `y` vs. `x` for the `circle` dataset. You can (and should) reuse code we introduced above, just replace the dataset name with the desired dataset. Then, calculate the correlation coefficient between `x` and `y` for this dataset. How does this value compare to the `r` of `dino`?**
 
@@ -185,11 +188,13 @@ ggplot(data = circle_data, mapping = aes(x = x, y = y)) +
   geom_point()
 
 ```
+
 ```{r, eval=TRUE}
 circle_data %>%
   summarize(r = cor(x, y))
 ```
-**The circle dataset has a slightly more negative correlation than the other two. **
+
+**The circle dataset has a slightly more negative correlation than the other two.**
 
 Facet by the dataset variable, placing the plots in a 3 column grid, and don't add a legend.
 
