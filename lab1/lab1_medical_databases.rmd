@@ -46,17 +46,23 @@ NoShow encodes whether or not the patient did not attend the appointment.
 
 **2** Can you think of 3 hypotheses for why someone may be more likely to miss a medical appointment?
 
-A patient may be likely
+A patient may be likely to miss a medical appointment if the patient does not have access to an effective means of transportation to the clinic, and additionally, this factor may be contributed to by socioeconomic status (not owning a car, or not being able to afford public transportation). Another possible factor that may result in an individual being more likely to miss medical appointments is disability, specifically where mobility is concerned.
 
 **3** Can you provide 3 examples of important contextual information that is missing in this data dictionary and dataset that could impact your analyses e.g., what type of medical appointment does each `AppointmentID` refer to?
+
+One piece of context that is missing regarding the SMS messages is the time at which they were sent, which may have a large effect on the reminders' efficacy, when compared to the scheduled appointment time. For example, if the reminder SMS is sent shortly before the appointment, then a patient who may have forgotten their appointment may not be able to reach the clinic before the scheduled time. 
+
+Another missing piece of context is a patient-stated reason that missed appointments are missed (maybe in the form of a follow-up survey via SMS). Although this data may not necessarily be easy (or reasonable) to produce/obtain, it would allow for a much more robust analysis that could be informative of the circumstances wherein an SMS reminder may be useful, and may shed light on additional factors contributing to missed appointments. 
+
+Finally, as mentioned in the question, the type of medical appointment and the medical condition (if any) being assessed may be predictive of missed appointments as well.
 
 ## Data Parsing and Cleaning
 
 **4** Modify the following to make it reproducible i.e., downloads the data file directly from version control
 
 ```{r parse}
-raw.data <- read_csv('lab1_data/2016_05v2_VitoriaAppointmentData.csv', col_types='ccfTTicllllflf')
-#raw.data <- readr::read_csv('https://raw.githubusercontent.com/maguire-lab/health_data_science_research/ ... ')
+#raw.data <- read_csv('lab1_data/2016_05v2_VitoriaAppointmentData.csv', col_types='ccfTTicllllflf')
+raw.data <- readr::read_csv('https://raw.githubusercontent.com/maguire-lab/health_data_science_research/master/static_files/practicals/lab1_data/2016_05v2_VitoriaAppointmentData.csv', col_types='ccfTTicllllflf')
 ```
 
 Now we need to check data is valid: because we specified col_types and the data parsed without error most of our data seems to at least be formatted as we expect i.e., ages are integers
@@ -68,6 +74,12 @@ raw.data %>% filter(Age > 110)
 We can see there are 2 patient's older than 100 which seems suspicious but we can't actually say if this is impossible.
 
 **5** Are there any individuals with impossible ages? If so we can drop this row using `filter` i.e., `data <- data %>% filter(CRITERIA)`
+
+**A:** I'm not sure that these ages are impossible, but there are individuals with SocialWelfare being true and SMSReceived being true who are much too young for that to make sense. I'm not sure that they should be filtered though as another interpretation of these records would be that those fields apply to the child's parents/household. 
+```{r}
+raw.data %>% filter(Age < 2) %>%  filter(SocialWelfare == TRUE)
+
+```
 
 ## Exploratory Data Analysis
 
@@ -156,6 +168,9 @@ corplot(raw.data[,numerical.vars])
 Correlation heatmaps are useful for identifying linear relationships between variables/features. In this case, we are particularly interested in relationships between `NoShow` and any specific variables.
 
 **7** Which parameters most strongly correlate with missing appointments (`NoShow`)?
+
+
+**A:** 
 
 **8** Are there any other variables which strongly correlate with one another?
 
@@ -313,6 +328,7 @@ ggplot(raw.data,aes(x=Lag,fill=`NoShow`))+
 
 **15** Have a look at the values in lag variable, does anything seem odd?
 **A:** 
+The first thing I notice looking at the variable is that there are a large number of patients who did not no-show, and who have 0 lag. The strange thing is some have negative lag, but this can be explained by the scheduled date accounting for hours and the appointment date not accounting for hours, so all appointment dates are treated as having occurred at midnight, when they really occurred later in the day. 
 
 ## Predictive Modeling
 
@@ -358,6 +374,9 @@ xgb.pred = predict(xgb.model, newdata=test)
 xgb.probs = predict(xgb.model ,newdata=test,type="prob")
 test$NoShow.numerical = ifelse(test$NoShow=="Yes",1,0)
 ```
+```{r}
+library(xgboost)
+```
 
 ```{r}
 confusionMatrix(xgb.pred,test$NoShow,positive="Yes")
@@ -400,8 +419,21 @@ ggplot(results,aes(x=Feature,y=Importance,fill=Importance))+
 ```
 
 **17** Using the [caret package](https://topepo.github.io/caret/) fit and evalaute 1 other ML model on this data and evaluate the performance.
+```{r}
+library(caret)
+#install.packages('gbm')
+set.seed(38)
+fitControl <- trainControl(method = "repeatedcv", number=10,repeats=10, classProbs=TRUE)
+gbmFit1 <- train(NoShow ~ ., data = train, method = "gbm", trControl = fitControl, verbose = FALSE)
+gbmFit1
+
+
+```
 
 **18** Based on everything, do you think we can trust analyses based on this dataset? Explain your reasoning.
+
+**A:**
+I don't think that we can trust our analyses on this data. The data has a number of cleaning issues that aren't verifiable (the records with abnormal attributes in conjunction with age, the lack of data on the types of appointments being made). Although we can make models which make predictions, these models show some evidence that they may be overfitted.
 
 ## Credits
 
