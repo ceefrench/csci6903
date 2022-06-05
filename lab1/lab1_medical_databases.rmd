@@ -170,7 +170,7 @@ Correlation heatmaps are useful for identifying linear relationships between var
 **7** Which parameters most strongly correlate with missing appointments (`NoShow`)?
 
 
-**A:** 
+**A:** Disability
 
 **8** Are there any other variables which strongly correlate with one another?
 
