@@ -1,3 +1,8 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
 As we found for natural language processing, `R` is a little bit limited when it comes to deep neural networks.
 Unfortunately, these are currently the basis of gold-standard methods for medical image analysis.
 The ML/DL `R` packages that do exist provide interfaces (APIs) to libraries built in more faster languages like C/C++ and Java.
