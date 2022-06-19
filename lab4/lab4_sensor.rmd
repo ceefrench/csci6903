@@ -1,3 +1,8 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
 There are 2 packages you will need to install for today's practical: `install.packages(c("h2o", "eegkit", "forecast", "tseries")` apart from that everything else should already be available on your system.
 However, I will endeavour to use explicit imports to make it clear where functions are coming from (functions without `library_name::` are part of base R or a function we've defined in this notebook).
 
